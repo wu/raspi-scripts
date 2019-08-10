@@ -4,11 +4,6 @@ set -o nounset -o errexit -o pipefail -o errtrace
 
 trap 'echo EXITED: "${BASH_SOURCE}" "${LINENO}"' ERR
 
-# dmesg | tail | grep sdc || {
-#     echo "ERROR: don't see reference to sdc insertion in dmesg"
-#     exit 1
-# }
-
 cd ~/projects/rpi/images
 
 DISK=${1:-}
@@ -22,8 +17,11 @@ fi
 if [ -z "$DISK" ]; then
     diskutil list;
     echo
-    echo
     echo "ERROR: no disk device specified";
+    echo
+    echo "USAGE:   $0 disk#"
+    echo
+    echo "EXAMPLE: $0 disk9"
     exit 1;
 fi
 
