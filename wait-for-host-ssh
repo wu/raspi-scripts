@@ -37,15 +37,8 @@ function check_ssh {
 
 #############################################################################
 
-if check_ping; then
-    if check_ssh; then
-        debug "$host ssh is up"
-        exit
-    fi
-fi
-
 echo
-echo "$host ssh is not up, re-checking every 15 seconds..."
+echo "check $host every 15 seconds..."
 echo
 
 time while true
