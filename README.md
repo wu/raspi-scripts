@@ -1,7 +1,7 @@
 Scripts for managing Raspis
 -------------------------------------------
 
-These scripts are intended for use with raspbia buster.
+These scripts are intended for use with raspbian buster.
 
 
 * raspbian-burn-sd-macos - burn SD card for raspbian on MacOS
