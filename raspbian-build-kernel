@@ -152,9 +152,13 @@ function configure() {
     fi
 
     echo
-    echo "diffing config:"
+    echo "ENABLING: CONFIG_CGROUP_NET_PRIO for docker"
     echo
     echo 'CONFIG_CGROUP_NET_PRIO=y' >> .config
+
+    echo
+    echo "diffing config:"
+    echo
     diff -uw .config.orig .config || true
     echo
     echo
