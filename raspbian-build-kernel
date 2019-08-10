@@ -138,7 +138,7 @@ function configure() {
     if [ ! -r .config ]; then
         echo
         echo 'Making config'
-        make bcm2709_defconfig
+        make $CONFIG
     fi
 
     if [ -r .config.orig ]; then
