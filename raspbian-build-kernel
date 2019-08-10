@@ -8,6 +8,10 @@ trap 'echo EXITED: "${BASH_SOURCE}" "${LINENO}"' ERR
 # DOCS
 #
 # https://www.raspberrypi.org/documentation/linux/kernel/building.md
+#
+# https://github.com/docker/for-linux/issues/545
+#   - kernel build required for docker on Raspbian Buster
+#
 
 #
 # Recorded Runtimes:
