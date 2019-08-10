@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+#
+# NOTE: this script requires sshpass
+#       see: https://gist.github.com/arunoda/7790979
+#
+
 set -o nounset -o errexit -o pipefail -o errtrace
 
 trap 'echo EXITED: "${BASH_SOURCE}" "${LINENO}"' ERR
