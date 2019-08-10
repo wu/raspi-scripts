@@ -1,0 +1,209 @@
+#!/usr/bin/env bash
+
+set -o nounset -o errexit -o pipefail -o errtrace
+
+trap 'echo EXITED: "${BASH_SOURCE}" "${LINENO}"' ERR
+
+#
+# DOCS
+#
+# https://www.raspberrypi.org/documentation/linux/kernel/building.md
+
+#
+# Recorded Runtimes:
+#
+# model 2B - 177m
+#
+
+function get_kernel_name() {
+    echo
+    echo "Determining kernel details..."
+    #
+    # RASPI Versions
+    # TAKEN FROM: https://www.raspberrypi.org/documentation/hardware/raspberrypi/revision-codes/README.md
+    #
+    CODE_0002=B
+    CODE_0003=B
+    CODE_0004=B
+    CODE_0005=B
+    CODE_0006=B
+    CODE_0007=A
+    CODE_0008=A
+    CODE_0009=A
+    CODE_000d=B
+    CODE_000e=B
+    CODE_000f=B
+    CODE_0010=B+
+    CODE_0011=CM1
+    CODE_0012=A+
+    CODE_0013=B+
+    CODE_0014=CM1
+    CODE_0015=A+
+    CODE_900021=A+
+    CODE_900032=B+
+    CODE_900092=Zero
+    CODE_900093=Zero
+    CODE_9000c1=ZeroW
+    CODE_9020e0=3A+
+    CODE_920092=Zero
+    CODE_920093=Zero
+    CODE_900061=CM
+    CODE_a01040=2B
+    CODE_a01041=2B
+    CODE_a02082=3B
+    CODE_a020a0=CM3
+    CODE_a020d3=3B+
+    CODE_a21041=2B
+    CODE_a22042=2B
+    CODE_a22082=3B
+    CODE_a220a0=CM3
+    CODE_a32082=3B
+    CODE_a52082=3B
+    CODE_a22083=3B
+    CODE_a02100=CM3+
+    CODE_a03111=4B
+    CODE_b03111=4B
+    CODE_c03111=4B
+
+    CPU_REVISION=$(cat /proc/cpuinfo | grep Revision | sed 's|^.*: ||g')
+    echo "CPU REVISION: $CPU_REVISION"
+
+    CPU_MODEL_STRING="CODE_$CPU_REVISION"
+    CPU_MODEL="${!CPU_MODEL_STRING}"
+    echo "CPU MODEL: $CPU_MODEL"
+
+    case $CPU_MODEL in
+        4B)
+            echo "Using Raspi 4 kernel"
+            KERNEL=kernel7l
+            CONFIG=bcm2711_defconfig
+            ;;
+        3B)
+            echo "Using Raspi 3 kernel"
+            KERNEL=kernel7
+            CONFIG=bcm2709_defconfig
+            ;;
+        2B)
+            echo "Using Raspi 2 kernel"
+            KERNEL=kernel7
+            CONFIG=bcm2709_defconfig
+            ;;
+        *)
+            echo "Using default Raspi Kernel"
+            KERNEL=kernel
+            CONFIG=bcmrpi_defconfig
+            ;;
+    esac
+
+    echo "KERNEL: $KERNEL"
+
+    echo
+    echo
+}
+
+function install_deps() {
+    echo
+    echo "Installing dependencies..."
+    apt-get install git bc bison flex libssl-dev
+    echo
+    echo
+}
+
+function get_kernel_version() {
+    echo
+    echo
+    KERNEL_VERSION=$(uname -r | cut -d. -f 1,2)
+    KERNEL_CHECKOUT_VERSION="rpi-${KERNEL_VERSION}.y"
+    echo KERNEL_VERSION: $KERNEL_VERSION
+    echo KERNEL_CHECKOUT_VERSION: $KERNEL_CHECKOUT_VERSION
+    echo
+}
+
+function clone_source() {
+    echo
+    echo "Checking for kernel source..."
+    if [ -r linux ]; then
+        echo
+        echo "already have kernel source..."
+    else
+        echo
+        echo "cloning repo..."
+        git clone --depth=1 --branch ${KERNEL_CHECKOUT_VERSION} https://github.com/raspberrypi/linux
+    fi
+    echo
+    echo
+}
+
+function configure() {
+    if [ ! -r .config ]; then
+        echo
+        echo 'Making config'
+        make bcm2709_defconfig
+    fi
+
+    if [ -r .config.orig ]; then
+        echo
+        echo "Restoring original config"
+        cp .config.orig .config
+    else
+        echo
+        echo "Backing up config"
+        cp .config .config.orig
+    fi
+
+    echo
+    echo "diffing config:"
+    echo
+    echo 'CONFIG_CGROUP_NET_PRIO=y' >> .config
+    diff -uw .config.orig .config || true
+    echo
+    echo
+}
+
+function build() {
+    echo
+    echo "building..."
+    time make -j4 zImage modules dtbs
+    echo
+    echo
+}
+
+function install() {
+    echo
+    echo "make modules_install..."
+    make modules_install
+
+    echo
+    echo "Copying files into place..."
+    cp -v arch/arm/boot/dts/*.dtb /boot/
+    cp -v arch/arm/boot/dts/overlays/*.dtb* /boot/overlays/
+    cp -v arch/arm/boot/dts/overlays/README /boot/overlays/
+    cp -v arch/arm/boot/zImage /boot/$KERNEL.img
+}
+
+function reboot() {
+    echo
+    echo "rebooting..."
+    echo
+    shutdown -r now
+}
+
+#############################################################################
+
+cd /root
+
+get_kernel_name
+install_deps
+
+get_kernel_version
+# # determine kernel branch - uname -a => 4.19.57+
+
+clone_source
+
+cd linux
+
+configure
+build
+install
+
+reboot

@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+set -o nounset -o errexit -o pipefail -o errtrace
+
+trap 'echo EXITED: "${BASH_SOURCE}" "${LINENO}"' ERR
+
+# dmesg | tail | grep sdc || {
+#     echo "ERROR: don't see reference to sdc insertion in dmesg"
+#     exit 1
+# }
+
+cd ~/projects/rpi/images
+
+DISK=${1:-}
+IMAGE=${IMAGE:-2019-07-10-raspbian-buster-lite.img}
+
+if [ ! -r $IMAGE ]; then
+    echo "ERROR: can't read $IMAGE"
+    exit 1
+fi
+
+if [ -z "$DISK" ]; then
+    diskutil list;
+    echo
+    echo
+    echo "ERROR: no disk device specified";
+    exit 1;
+fi
+
+diskutil info /dev/$DISK | grep Size | head -1 || {
+    diskutil list;
+    echo
+    echo
+    echo "ERROR: couldn't find /dev/$DISK"
+    exit 1
+}
+
+echo "OK?"
+read ans
+if [ "$ans" != "y" ]; then exit 1; fi
+
+echo
+echo "formatting with FAT32..."
+sudo diskutil eraseDisk FAT32 RASPI MBRFormat /dev/$DISK
+
+echo
+echo "ejecting..."
+diskutil unmountDisk /dev/$DISK
+
+echo
+echo "burning '$IMAGE'..."
+pv $IMAGE | sudo dd of=/dev/r$DISK bs=1m
+sleep 5
+
+echo
+echo "enabling ssh..."
+touch /Volumes/boot/ssh
+
+echo
+echo "ejecting..."
+diskutil eject /dev/$DISK
