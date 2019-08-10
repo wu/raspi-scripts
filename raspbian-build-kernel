@@ -196,8 +196,6 @@ get_kernel_name
 install_deps
 
 get_kernel_version
-# # determine kernel branch - uname -a => 4.19.57+
-
 clone_source
 
 cd linux
