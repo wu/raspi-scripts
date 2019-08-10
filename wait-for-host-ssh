@@ -1,0 +1,70 @@
+#!/bin/bash
+
+set -o nounset -o errexit -o pipefail -o errtrace
+
+
+
+host="$1"
+sleep=${2:-5}
+
+function debug {
+    echo "debug: $@" > /dev/null
+}
+
+function check_ping {
+    ping -c 1 $host > /tmp/wait-for-host-ssh-$host 2>&1
+    results=$?
+
+    date="$(date)"
+
+    echo -n "$date: ping: "
+    cat /tmp/wait-for-host-ssh-$host | grep received
+
+    return $results
+}
+
+function check_ssh {
+    nc -v -w 5 -z $host 22 > /tmp/wait-for-host-ssh-$host 2>&1
+    results=$?
+
+    date="$(date)"
+
+    echo -n "$date: ssh: "
+    cat /tmp/wait-for-host-ssh-$host
+
+    return $results
+}
+
+#############################################################################
+
+if check_ping; then
+    if check_ssh; then
+        debug "$host ssh is up"
+        exit
+    fi
+fi
+
+echo
+echo "$host ssh is not up, re-checking every 15 seconds..."
+echo
+
+time while true
+do
+    if check_ping; then
+        if check_ssh; then
+            date="$(date)"
+            echo "$date: $host ssh is up"
+            exit
+        else
+            date="$(date)"
+            echo "$date: no response on ssh port"
+        fi
+    else
+        date="$(date)"
+        echo "$date: no response to ping"
+    fi
+
+    sleep $sleep
+    echo
+
+done

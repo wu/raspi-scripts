@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+set -o nounset -o errexit -o pipefail -o errtrace
+
+trap 'echo EXITED: "${BASH_SOURCE}" "${LINENO}"' ERR
+
+host="${1:-}"
+if [ "$host" = "" ]; then
+    echo "ERROR: must specify hostname or ip"
+    exit 1
+fi
+
+./wait-for-host-ssh $host 15
+
+echo "Updating ssh known hosts"
+ssh-keygen -R $host || true
+
+echo "Checking ip address"
+if [ "${host/192/}" = "$host" ]; then
+    echo "Looking up host"
+    ip="$(host $host | cut -d' ' -f 4)"
+else
+    echo "IP = $host"
+    ip=$host
+fi
+
+echo "Checking IP in ssh known hosts"
+if [ ! -z "$ip" ]; then
+    ssh-keygen -R $ip || true
+    ssh-keyscan $ip >> ~/.ssh/known_hosts
+fi
+
+ssh-keyscan $host >> ~/.ssh/known_hosts
+
+echo
+echo "Default password is: raspberry"
+echo
+sshpass -p raspberry ssh-copy-id pi@$host
+
+echo
+echo "Copying ssh key to root"
+ssh pi@$host 'sudo mkdir /root/.ssh/; sudo cp .ssh/authorized_keys /root/.ssh/'
+
+echo
+echo "Installing docker"
+ssh -t root@$host 'docker ps 2>/dev/null || apt-get install -y docker-compose'
+
+echo
+echo "OK"
