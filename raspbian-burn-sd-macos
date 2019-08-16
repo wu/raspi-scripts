@@ -38,6 +38,10 @@ read ans
 if [ "$ans" != "y" ]; then exit 1; fi
 
 echo
+echo "ejecting..."
+diskutil unmountDisk /dev/$DISK
+
+echo
 echo "formatting with FAT32..."
 sudo diskutil eraseDisk FAT32 RASPI MBRFormat /dev/$DISK
 
