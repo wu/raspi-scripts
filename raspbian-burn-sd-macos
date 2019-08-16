@@ -15,7 +15,7 @@ if [ ! -r $IMAGE ]; then
 fi
 
 if [ -z "$DISK" ]; then
-    diskutil list;
+    diskutil list external physical
     echo
     echo "ERROR: no disk device specified";
     echo
