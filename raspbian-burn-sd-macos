@@ -43,7 +43,16 @@ diskutil unmountDisk /dev/$DISK
 
 echo
 echo "formatting with FAT32..."
-sudo diskutil eraseDisk FAT32 RASPI MBRFormat /dev/$DISK
+echo
+sudo diskutil eraseDisk FAT32 RASPI MBRFormat /dev/$DISK || {
+    echo
+    echo
+    echo "NOTE: if disktuil failed with this error message, then your sd card may be corrupt"
+    echo "    Error: -69830: This operation requires an unmounted disk"
+    echo
+    exit 1
+}
+sleep 5
 
 echo
 echo "ejecting..."
