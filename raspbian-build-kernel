@@ -16,8 +16,9 @@ trap 'echo EXITED: "${BASH_SOURCE}" "${LINENO}"' ERR
 #
 # Recorded Runtimes:
 #
-# model 3B - 104m
-# model 2B - 177m
+# model 3B   -  104m
+# model 2B   -  177m
+# model zero - 1100m
 #
 
 function get_kernel_name() {
